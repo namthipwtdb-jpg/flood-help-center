@@ -1,175 +1,129 @@
 from pathlib import Path
-import zipfile, textwrap
+import zipfile
 
-out = Path("/mnt/data/flood-help-center")
-out.mkdir(exist_ok=True)
+root = Path("/mnt/data/flood-help-center-full")
+root.mkdir(parents=True, exist_ok=True)
 
-index_html = r'''<!doctype html>
+index = """<!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ศูนย์แจ้งเหตุและช่วยเหลืออุทกภัย</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="topbar"><div class="container nav">
-<a class="brand" href="#home"><span class="brand-mark">≋</span><span><b>ศูนย์แจ้งเหตุ</b><small>และช่วยเหลืออุทกภัย</small></span></a>
-<nav><a href="#report">แจ้งเหตุ</a><a href="#status">ติดตามสถานะ</a><a href="#guide">คำแนะนำ</a></nav>
+<header><div class="wrap nav">
+<a class="brand" href="#home"><span class="logo">≋</span><span><b>ศูนย์แจ้งเหตุ</b><small>และช่วยเหลืออุทกภัย</small></span></a>
+<nav><a href="#report">แจ้งเหตุ</a><a href="#track">ติดตามสถานะ</a><a href="#dashboard">เจ้าหน้าที่</a><a href="#guide">คำแนะนำ</a></nav>
 <a class="hotline" href="tel:1784">สายด่วน 1784</a>
 </div></header>
 
 <main id="home">
-<section class="hero"><div class="container hero-grid"><div>
-<div class="eyebrow"><span class="pulse"></span> ระบบรับแจ้งเหตุและประสานความช่วยเหลือ</div>
+<section class="hero"><div class="wrap hero-grid"><div>
+<div class="eyebrow">● ระบบรับแจ้งเหตุและประสานความช่วยเหลือ</div>
 <h1>แจ้งเหตุวันนี้<br><span>เพื่อให้ความช่วยเหลือไปถึงเร็วขึ้น</span></h1>
-<p>แจ้งจุดเกิดเหตุ ผู้ได้รับผลกระทบ และความต้องการความช่วยเหลือได้ในแบบฟอร์มเดียว พร้อมบันทึกเลขที่แจ้งเหตุเพื่อติดตามผล</p>
-<div class="hero-actions"><a class="btn primary" href="#report">🚨 แจ้งเหตุขอความช่วยเหลือ</a><a class="btn ghost" href="#status">🔎 ตรวจสอบสถานะ</a></div>
-<div class="trust"><span>✓ ใช้งานได้บนมือถือ</span><span>✓ รองรับการส่งตำแหน่ง</span><span>✓ ออกแบบสำหรับงานภาครัฐ</span></div>
+<p>ระบบต้นแบบศูนย์แจ้งเหตุและช่วยเหลืออุทกภัย สำหรับรับแจ้งสถานการณ์ จุดเกิดเหตุ และความต้องการความช่วยเหลืออย่างเป็นระบบ</p>
+<div class="actions"><a class="btn primary" href="#report">🚨 แจ้งเหตุขอความช่วยเหลือ</a><a class="btn light" href="#track">🔎 ติดตามสถานะ</a></div>
+<div class="trust"><span>✓ รองรับ GPS</span><span>✓ รองรับมือถือ</span><span>✓ มีระบบติดตามเลขที่แจ้งเหตุ</span></div>
 </div>
-<div class="hero-card"><div class="card-head"><span>สถานการณ์รับแจ้ง</span><span class="live"><i></i> ระบบออนไลน์</span></div>
-<div class="stat"><strong id="reportCount">0</strong><span>รายการแจ้งเหตุ<br>ในอุปกรณ์นี้</span></div>
-<div class="mini-grid"><div><b>191</b><small>เหตุด่วนเหตุร้าย</small></div><div><b>1669</b><small>การแพทย์ฉุกเฉิน</small></div><div><b>1784</b><small>ปภ.</small></div></div>
-<p class="note">หากเป็นเหตุฉุกเฉินที่มีอันตรายต่อชีวิต ให้โทรสายด่วนโดยตรง</p></div></div></section>
+<div class="hero-card"><div class="card-title"><b>ภาพรวมระบบ</b><span>● ออนไลน์</span></div>
+<div class="bigstat"><strong id="count">0</strong><span>รายการทดสอบ<br>ในอุปกรณ์นี้</span></div>
+<div class="hot-grid"><div><b>191</b><small>เหตุด่วน</small></div><div><b>1669</b><small>การแพทย์</small></div><div><b>1784</b><small>ปภ.</small></div></div>
+<p class="small">กรณีมีอันตรายต่อชีวิต ให้โทรสายด่วนโดยตรง</p></div>
+</div></section>
 
-<section class="section" id="report"><div class="container">
-<div class="section-title"><div><span class="kicker">01 / REPORT</span><h2>แบบแจ้งเหตุและขอรับความช่วยเหลือ</h2><p>กรอกข้อมูลเท่าที่ทราบ ระบบจะสร้างเลขที่แจ้งเหตุให้โดยอัตโนมัติ</p></div><span class="required">* ข้อมูลที่จำเป็น</span></div>
-<form id="reportForm" class="form-card">
-<div class="form-section"><h3>ข้อมูลผู้แจ้ง</h3><div class="form-grid">
-<label>ชื่อผู้แจ้ง *<input name="name" required placeholder="ระบุชื่อ-นามสกุล"></label>
-<label>เบอร์โทรศัพท์ *<input name="phone" required type="tel" placeholder="เช่น 08x-xxx-xxxx"></label>
-</div></div>
-<div class="form-section"><h3>รายละเอียดเหตุการณ์</h3><div class="form-grid">
+<section class="section" id="report"><div class="wrap">
+<div class="heading"><div><label>01 / REPORT</label><h2>แบบแจ้งเหตุและขอรับความช่วยเหลือ</h2><p>กรอกข้อมูลที่ทราบ ระบบจะสร้างเลขที่แจ้งเหตุให้อัตโนมัติ</p></div><span>* ข้อมูลจำเป็น</span></div>
+<form id="reportForm" class="card">
+<h3>ข้อมูลผู้แจ้ง</h3><div class="grid">
+<label>ชื่อผู้แจ้ง *<input name="name" required placeholder="ชื่อ-นามสกุล"></label>
+<label>เบอร์โทรศัพท์ *<input name="phone" required type="tel" placeholder="08x-xxx-xxxx"></label></div>
+<h3>รายละเอียดเหตุการณ์</h3><div class="grid">
 <label>ประเภทเหตุ *<select name="type" required><option value="">เลือกประเภทเหตุ</option><option>อพยพ / ติดค้าง</option><option>ผู้สูงอายุ / ผู้ป่วย / ผู้พิการ</option><option>อาหาร / น้ำดื่ม / ถุงยังชีพ</option><option>เรือ / รถ / การเดินทาง</option><option>บ้านเรือนเสียหาย</option><option>ถนน / สะพาน / เส้นทางถูกตัดขาด</option><option>ไฟฟ้า / ประปา / สาธารณูปโภค</option><option>แจ้งระดับน้ำ</option><option>อื่น ๆ</option></select></label>
-<label>ระดับน้ำโดยประมาณ<select name="water"><option>ไม่ทราบ</option><option>ต่ำกว่า 30 ซม.</option><option>30–50 ซม.</option><option>50–100 ซม.</option><option>มากกว่า 100 ซม.</option></select></label>
+<label>ระดับน้ำ<select name="water"><option>ไม่ทราบ</option><option>ต่ำกว่า 30 ซม.</option><option>30–50 ซม.</option><option>50–100 ซม.</option><option>มากกว่า 100 ซม.</option></select></label>
 <label>จำนวนผู้ได้รับผลกระทบ<input name="people" type="number" min="1" placeholder="คน"></label>
 <label>ความเร่งด่วน<select name="urgency"><option>ทั่วไป</option><option>เร่งด่วน</option><option>ฉุกเฉิน / มีผู้เสี่ยงอันตราย</option></select></label>
 <label class="full">สถานที่ / ที่อยู่เกิดเหตุ *<textarea name="location" required rows="3" placeholder="บ้านเลขที่ หมู่ ตำบล อำเภอ หรือจุดสังเกต"></textarea></label>
 </div>
-<div class="location-box"><div><b>📍 ตำแหน่งจุดเกิดเหตุ</b><small>กดปุ่มเพื่อใช้ตำแหน่ง GPS ของเครื่อง</small></div>
-<button type="button" class="btn outline" id="gpsBtn">ใช้ตำแหน่งปัจจุบัน</button>
-<div class="coords"><input id="lat" name="lat" placeholder="ละติจูด" readonly><input id="lng" name="lng" placeholder="ลองจิจูด" readonly></div></div>
-</div>
-<div class="form-section"><h3>ข้อมูลเพิ่มเติม</h3><div class="form-grid">
-<label class="full">รายละเอียดเพิ่มเติม<textarea name="detail" rows="4" placeholder="อธิบายสถานการณ์ สิ่งที่ต้องการ หรือข้อมูลที่เป็นประโยชน์ต่อเจ้าหน้าที่"></textarea></label>
-<label class="full">รูปภาพประกอบ <input name="photo" type="file" accept="image/*"><small class="hint">ต้นแบบนี้ยังไม่อัปโหลดรูปขึ้นฐานข้อมูลกลาง</small></label>
-</div></div>
-<label class="consent"><input type="checkbox" required> ข้าพเจ้ายืนยันว่าข้อมูลที่แจ้งเป็นข้อมูลตามที่ทราบ และยินยอมให้หน่วยงานใช้ข้อมูลเพื่อประสานและให้ความช่วยเหลือ</label>
-<button class="btn primary submit" type="submit">ส่งแจ้งเหตุและขอรับความช่วยเหลือ →</button>
+<div class="gps"><div><b>📍 ตำแหน่งจุดเกิดเหตุ</b><small>สามารถใช้ GPS จากอุปกรณ์ได้</small></div><button type="button" class="btn outline" id="gps">ใช้ตำแหน่งปัจจุบัน</button>
+<div class="grid"><input id="lat" name="lat" placeholder="ละติจูด" readonly><input id="lng" name="lng" placeholder="ลองจิจูด" readonly></div></div>
+<h3>ข้อมูลเพิ่มเติม</h3><div class="grid"><label class="full">รายละเอียดเพิ่มเติม<textarea name="detail" rows="4" placeholder="สถานการณ์และสิ่งที่ต้องการให้ช่วยเหลือ"></textarea></label>
+<label class="full">รูปภาพประกอบ <input type="file" accept="image/*"><small class="hint">ต้นแบบนี้ยังไม่อัปโหลดไฟล์ไปฐานข้อมูลกลาง</small></label></div>
+<label class="consent"><input type="checkbox" required> ข้าพเจ้ายืนยันข้อมูลตามที่ทราบ และยินยอมให้ใช้ข้อมูลเพื่อประสานการช่วยเหลือ</label>
+<button class="btn primary fullbtn">ส่งแจ้งเหตุและขอรับความช่วยเหลือ →</button>
 </form></div></section>
 
-<section class="section alt" id="status"><div class="container two-col"><div>
-<span class="kicker">02 / TRACK</span><h2>ติดตามสถานะการแจ้งเหตุ</h2><p>กรอกเลขที่แจ้งเหตุที่ได้รับหลังส่งแบบฟอร์ม</p>
-<form id="statusForm" class="track-form"><input id="statusId" placeholder="เช่น FH-2026-12345" required><button class="btn primary">ตรวจสอบ</button></form>
-<div id="statusResult"></div>
-</div>
-<div class="steps"><div><b>01</b><span><strong>รับแจ้ง</strong><small>ระบบบันทึกข้อมูล</small></span></div><div><b>02</b><span><strong>ตรวจสอบ</strong><small>เจ้าหน้าที่พิจารณาเหตุ</small></span></div><div><b>03</b><span><strong>ประสานความช่วยเหลือ</strong><small>ส่งต่อหน่วยงาน/ทีมปฏิบัติการ</small></span></div><div><b>04</b><span><strong>ปิดเหตุ</strong><small>บันทึกผลการช่วยเหลือ</small></span></div></div>
+<section class="section alt" id="track"><div class="wrap two">
+<div><label>02 / TRACK</label><h2>ติดตามสถานะการแจ้งเหตุ</h2><p>กรอกเลขที่ได้รับหลังส่งแบบฟอร์ม</p>
+<form id="trackForm" class="track"><input id="trackId" placeholder="เช่น FH-2026-12345" required><button class="btn primary">ตรวจสอบ</button></form><div id="result"></div></div>
+<div class="steps"><div><b>01</b><span><strong>รับแจ้ง</strong><small>ระบบบันทึกข้อมูล</small></span></div><div><b>02</b><span><strong>ตรวจสอบ</strong><small>เจ้าหน้าที่ตรวจสอบ</small></span></div><div><b>03</b><span><strong>กำลังช่วยเหลือ</strong><small>ประสานทีมปฏิบัติการ</small></span></div><div><b>04</b><span><strong>ปิดเรื่อง</strong><small>บันทึกผลการช่วยเหลือ</small></span></div></div>
 </div></section>
 
-<section class="section" id="guide"><div class="container">
-<div class="section-title"><div><span class="kicker">03 / SAFETY</span><h2>คำแนะนำเมื่อเกิดอุทกภัย</h2></div></div>
-<div class="guide-grid"><article><span>🚨</span><h3>หากมีอันตรายต่อชีวิต</h3><p>โทร 191 หรือ 1669 ทันที และแจ้งจุดเกิดเหตุให้ชัดเจน</p></article>
-<article><span>🔌</span><h3>ระวังกระแสไฟฟ้า</h3><p>หลีกเลี่ยงพื้นที่น้ำท่วมใกล้เสาไฟ สายไฟ หรืออุปกรณ์ไฟฟ้า</p></article>
-<article><span>🎒</span><h3>เตรียมของจำเป็น</h3><p>เอกสารสำคัญ ยาประจำตัว โทรศัพท์ แบตเตอรี่สำรอง น้ำและอาหาร</p></article></div>
+<section class="section" id="dashboard"><div class="wrap">
+<div class="heading"><div><label>03 / OFFICER</label><h2>Dashboard เจ้าหน้าที่</h2><p>หน้าจอต้นแบบสำหรับพัฒนาระบบหลังบ้านต่อ</p></div><button class="btn outline" id="demoBtn">โหลดข้อมูลตัวอย่าง</button></div>
+<div class="stats"><div><span>ทั้งหมด</span><b id="all">0</b></div><div><span>ฉุกเฉิน</span><b id="urgent">0</b></div><div><span>กำลังดำเนินการ</span><b id="doing">0</b></div><div><span>ปิดเรื่อง</span><b id="closed">0</b></div></div>
+<div class="card tablewrap"><table><thead><tr><th>เลขที่</th><th>ประเภท</th><th>ความเร่งด่วน</th><th>สถานที่</th><th>สถานะ</th></tr></thead><tbody id="table"></tbody></table></div>
 </div></section>
+
+<section class="section alt" id="guide"><div class="wrap"><div class="heading"><div><label>04 / SAFETY</label><h2>คำแนะนำเมื่อเกิดอุทกภัย</h2></div></div>
+<div class="guides"><article>🚨<h3>อันตรายต่อชีวิต</h3><p>โทร 191 หรือ 1669 และแจ้งจุดเกิดเหตุให้ชัดเจน</p></article><article>🔌<h3>ระวังไฟฟ้า</h3><p>หลีกเลี่ยงน้ำท่วมใกล้สายไฟ เสาไฟ และอุปกรณ์ไฟฟ้า</p></article><article>🎒<h3>เตรียมของจำเป็น</h3><p>เอกสาร ยาประจำตัว โทรศัพท์ แบตเตอรี่สำรอง น้ำและอาหาร</p></article></div></div></section>
 </main>
-
-<footer><div class="container footer"><div><b>ศูนย์แจ้งเหตุและช่วยเหลืออุทกภัย</b><small>ต้นแบบระบบสำหรับนำเสนอและพัฒนาต่อ</small></div>
-<div class="footer-links"><a href="tel:191">191</a><a href="tel:1669">1669</a><a href="tel:1784">1784</a></div></div></footer>
-
-<div class="modal" id="successModal"><div class="modal-box"><button class="close" id="closeModal">×</button>
-<div class="success-icon">✓</div><h2>รับแจ้งเหตุเรียบร้อยแล้ว</h2><p>กรุณาเก็บเลขที่แจ้งเหตุไว้สำหรับติดตามสถานะ</p>
-<div class="incident-id" id="incidentId"></div><button class="btn primary" id="goStatus">ไปติดตามสถานะ</button></div></div>
+<footer><div class="wrap footer"><div><b>ศูนย์แจ้งเหตุและช่วยเหลืออุทกภัย</b><small>ระบบต้นแบบสำหรับนำเสนอและพัฒนาต่อ</small></div><div><a href="tel:191">191</a><a href="tel:1669">1669</a><a href="tel:1784">1784</a></div></div></footer>
+<div class="modal" id="modal"><div class="modalbox"><button id="close">×</button><div class="ok">✓</div><h2>รับแจ้งเหตุเรียบร้อยแล้ว</h2><p>เลขที่แจ้งเหตุของคุณคือ</p><strong id="newId"></strong><p>กรุณาเก็บเลขนี้ไว้สำหรับติดตามสถานะ</p><button class="btn primary" id="toTrack">ไปติดตามสถานะ</button></div></div>
 <script src="script.js"></script>
-</body></html>'''
+</body></html>"""
 
-style_css = r''':root{--navy:#092d4f;--blue:#0869b7;--cyan:#0ea5c9;--bg:#f4f8fb;--text:#17324a;--muted:#657b8e;--line:#dce7ef;--shadow:0 18px 50px rgba(10,50,80,.1)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:"Noto Sans Thai",sans-serif;color:var(--text);background:var(--bg);line-height:1.7}.container{width:min(1120px,92%);margin:auto}.topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}.nav{height:72px;display:flex;align-items:center;gap:28px}.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--navy);margin-right:auto}.brand-mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--cyan));color:white;display:grid;place-items:center;font-size:25px;font-weight:800}.brand small{display:block;color:var(--muted);font-size:11px;line-height:1}.nav nav{display:flex;gap:24px}.nav nav a,.footer a{color:var(--text);text-decoration:none;font-size:14px}.hotline{background:#eaf5ff;color:var(--blue);padding:8px 15px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}.hero{background:linear-gradient(120deg,#082b4b,#0b4e7c 60%,#087eaa);color:white;padding:82px 0 88px}.hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:70px;align-items:center}.eyebrow{font-size:13px;margin-bottom:20px}.pulse{display:inline-block;width:8px;height:8px;background:#54e6c2;border-radius:50%;margin-right:7px}.hero h1{font-size:clamp(38px,5vw,62px);line-height:1.15;margin:0 0 22px;letter-spacing:-1.5px}.hero h1 span{color:#aee8f7}.hero h2,h2{font-size:32px;line-height:1.3;margin:5px 0 8px;color:var(--navy)}h3{margin:0 0 7px}.hero p{font-size:17px;max-width:670px;color:#d9edf7}.hero-actions{display:flex;gap:12px;margin:30px 0}.btn{border:0;border-radius:10px;padding:12px 19px;font-family:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}.primary{background:linear-gradient(135deg,#08a5ce,#0872bd);color:#fff;box-shadow:0 9px 25px rgba(0,112,180,.22)}.ghost{border:1px solid rgba(255,255,255,.3);color:white;background:rgba(255,255,255,.06)}.outline{background:white;border:1px solid #9bc5dd;color:var(--blue)}.trust{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#c8e5f1}.hero-card{background:#fff;color:var(--text);border-radius:18px;padding:24px;box-shadow:var(--shadow)}.card-head{display:flex;justify-content:space-between;font-size:13px;font-weight:700}.live{color:#16866f}.live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#24b78f;margin-right:5px}.stat{display:flex;align-items:center;gap:15px;padding:27px 0;border-bottom:1px solid var(--line)}.stat strong{font-size:52px;color:var(--blue);line-height:1}.stat span{font-size:13px;color:var(--muted)}.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:18px}.mini-grid div{background:#f1f7fb;border-radius:10px;padding:11px}.mini-grid b{display:block;color:var(--navy);font-size:20px}.mini-grid small{font-size:10px;color:var(--muted)}.note{font-size:11px;color:var(--muted);margin:15px 0 0}.section{padding:76px 0}.alt{background:#eaf2f7}.section-title{display:flex;justify-content:space-between;align-items:end;margin-bottom:27px}.kicker{font-size:11px;letter-spacing:1.8px;color:var(--blue);font-weight:800}.section-title p{color:var(--muted);margin:0}.required{font-size:12px;color:#b34d4d}.form-card{background:white;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:30px}.form-section{padding:0 0 27px;margin-bottom:27px;border-bottom:1px solid var(--line)}.form-section h3{font-size:17px;color:var(--navy);margin-bottom:17px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.form-grid label{font-size:13px;font-weight:600}.form-grid .full{grid-column:1/-1}input,select,textarea{width:100%;margin-top:7px;border:1px solid #cfdee8;border-radius:9px;padding:12px 13px;font:inherit;color:var(--text);background:#fbfdff;outline:none}input:focus,select:focus,textarea:focus{border-color:#52a8cf;box-shadow:0 0 0 3px rgba(14,165,201,.1)}textarea{resize:vertical}.location-box{display:grid;grid-template-columns:1fr auto;gap:13px;align-items:center;background:#f3f9fc;border:1px solid #d5e8f1;border-radius:12px;padding:17px;margin-top:5px}.location-box small,.hint{display:block;color:var(--muted);font-weight:400;font-size:11px}.coords{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px}.consent{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--muted);margin:20px 0}.consent input{width:auto;margin-top:5px}.submit{width:100%;padding:14px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start}.track-form{display:flex;gap:10px;margin-top:22px}.track-form input{margin:0}.steps{display:grid;gap:12px}.steps>div{display:flex;gap:15px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px}.steps b{width:38px;height:38px;border-radius:50%;background:#eaf5fb;color:var(--blue);display:grid;place-items:center;font-size:12px}.steps strong,.steps small{display:block}.steps small{color:var(--muted);font-size:11px}.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.guide-grid article{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px}.guide-grid article>span{font-size:26px}.guide-grid p{color:var(--muted);font-size:13px;margin:0}.status-card{margin-top:16px;padding:15px;border-radius:10px;background:#fff;border:1px solid var(--line);font-size:13px}.status-card b{color:var(--blue)}footer{background:#06263f;color:#c4d7e4;padding:30px 0}.footer{display:flex;justify-content:space-between;align-items:center}.footer b,.footer small{display:block}.footer small{font-size:11px;color:#89a6b8}.footer-links{display:flex;gap:12px}.footer-links a{color:white;background:rgba(255,255,255,.08);padding:7px 14px;border-radius:8px}.modal{position:fixed;inset:0;background:rgba(3,25,42,.62);display:none;place-items:center;z-index:50;padding:20px}.modal.show{display:grid}.modal-box{background:#fff;border-radius:18px;padding:35px;max-width:430px;width:100%;text-align:center;position:relative}.close{position:absolute;right:15px;top:10px;border:0;background:none;font-size:28px;color:#718899;cursor:pointer}.success-icon{width:58px;height:58px;border-radius:50%;background:#dff7ee;color:#11926d;font-size:34px;display:grid;place-items:center;margin:auto}.incident-id{font-size:24px;font-weight:800;color:var(--blue);background:#eef8fc;padding:12px;border-radius:10px;margin:18px 0}.modal .btn{width:100%}@media(max-width:800px){.nav nav{display:none}.hero{padding:55px 0}.hero-grid,.two-col{grid-template-columns:1fr;gap:35px}.form-grid,.guide-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.section{padding:55px 0}.section-title{align-items:start;gap:10px;flex-direction:column}.location-box{grid-template-columns:1fr}.coords{grid-template-columns:1fr}.footer{gap:20px;align-items:flex-start;flex-direction:column}}'''
+css = """:root{--navy:#082f52;--blue:#0877bd;--cyan:#0aa7c9;--bg:#f4f8fb;--text:#17324a;--muted:#687f91;--line:#dce7ef;--white:#fff;--shadow:0 18px 50px rgba(10,50,80,.1)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:"Noto Sans Thai",sans-serif;color:var(--text);background:var(--bg);line-height:1.7}.wrap{width:min(1120px,92%);margin:auto}header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}.nav{height:72px;display:flex;align-items:center;gap:28px}.brand{display:flex;align-items:center;gap:11px;color:var(--navy);text-decoration:none;margin-right:auto}.brand small{display:block;color:var(--muted);font-size:11px;line-height:1}.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--navy),var(--cyan));color:#fff;display:grid;place-items:center;font-size:25px}.nav nav{display:flex;gap:22px}.nav nav a{color:var(--text);text-decoration:none;font-size:14px}.hotline{background:#eaf5ff;color:var(--blue);padding:8px 15px;border-radius:9px;text-decoration:none;font-weight:700;font-size:14px}.hero{background:linear-gradient(120deg,#072b4b,#0b4e7c 60%,#087eaa);color:#fff;padding:80px 0}.hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:65px;align-items:center}.eyebrow{font-size:13px;margin-bottom:20px}.hero h1{font-size:clamp(38px,5vw,62px);line-height:1.15;margin:0 0 20px}.hero h1 span{color:#aee8f7}.hero p{font-size:17px;color:#d8edf6;max-width:680px}.actions{display:flex;gap:12px;margin:28px 0}.btn{border:0;border-radius:10px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:linear-gradient(135deg,#08a5ce,#0872bd);color:#fff}.light{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3);color:#fff}.outline{background:#fff;border:1px solid #9bc5dd;color:var(--blue)}.trust{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#c8e5f1}.hero-card,.card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}.hero-card{color:var(--text);padding:24px}.card-title{display:flex;justify-content:space-between;font-size:13px}.card-title span{color:#148b70}.bigstat{display:flex;gap:15px;align-items:center;padding:25px 0;border-bottom:1px solid var(--line)}.bigstat strong{font-size:52px;color:var(--blue)}.bigstat span{font-size:13px;color:var(--muted)}.hot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:18px}.hot-grid div{background:#f1f7fb;padding:10px;border-radius:9px}.hot-grid b{display:block;color:var(--navy);font-size:20px}.hot-grid small,.small{color:var(--muted);font-size:10px}.section{padding:70px 0}.alt{background:#eaf2f7}.heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:25px}.heading label,.two>div>label{font-size:11px;letter-spacing:1.7px;color:var(--blue);font-weight:800}.heading h2,h2{font-size:31px;color:var(--navy);margin:4px 0}.heading p{color:var(--muted);margin:0}.card{padding:30px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:17px}.grid .full{grid-column:1/-1}label{font-size:13px;font-weight:600}input,select,textarea{width:100%;margin-top:7px;border:1px solid #cddde7;border-radius:9px;padding:12px;font:inherit;background:#fbfdff;color:var(--text)}textarea{resize:vertical}.form-card h3{font-size:17px;color:var(--navy);margin:0 0 15px}.form-card h3:not(:first-child){margin-top:28px}.gps{background:#f2f9fc;border:1px solid #d5e8f1;border-radius:12px;padding:17px;margin-top:18px;display:grid;grid-template-columns:1fr auto;gap:12px}.gps small,.hint{display:block;color:var(--muted);font-size:11px;font-weight:400}.gps .grid{grid-column:1/-1}.consent{display:flex;gap:8px;color:var(--muted);font-size:12px;margin:20px 0}.consent input{width:auto;margin-top:5px}.fullbtn{width:100%}.two{display:grid;grid-template-columns:1fr 1fr;gap:80px}.track{display:flex;gap:10px;margin-top:20px}.track input{margin:0}.steps{display:grid;gap:12px}.steps>div{display:flex;gap:15px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}.steps b{width:38px;height:38px;border-radius:50%;background:#eaf5fb;color:var(--blue);display:grid;place-items:center}.steps strong,.steps small{display:block}.steps small{font-size:11px;color:var(--muted)}.status{margin-top:15px;padding:15px;background:#fff;border:1px solid var(--line);border-radius:10px}.status b{color:var(--blue)}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:18px}.stats div{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px}.stats span,.stats b{display:block}.stats span{font-size:12px;color:var(--muted)}.stats b{font-size:30px;color:var(--blue)}.tablewrap{padding:0;overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:14px;border-bottom:1px solid var(--line)}th{background:#f4f8fb;color:var(--navy)}.guides{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.guides article{background:#fff;border:1px solid var(--line);border-radius:14px;padding:23px;font-size:25px}.guides h3{font-size:17px}.guides p{font-size:13px;color:var(--muted);margin:0}footer{background:#06263f;color:#c4d7e4;padding:30px 0}.footer{display:flex;justify-content:space-between;align-items:center}.footer b,.footer small{display:block}.footer small{font-size:11px;color:#89a6b8}.footer a{color:#fff;text-decoration:none;margin-left:9px;background:rgba(255,255,255,.08);padding:7px 13px;border-radius:8px}.modal{position:fixed;inset:0;background:rgba(3,25,42,.65);display:none;place-items:center;padding:20px;z-index:30}.modal.show{display:grid}.modalbox{position:relative;background:#fff;border-radius:18px;padding:35px;max-width:420px;width:100%;text-align:center}.modalbox>#close{position:absolute;right:14px;top:8px;border:0;background:none;font-size:28px;color:#789;cursor:pointer}.ok{width:58px;height:58px;border-radius:50%;background:#dff7ee;color:#11926d;font-size:34px;display:grid;place-items:center;margin:auto}.modalbox strong{display:block;color:var(--blue);background:#eef8fc;padding:12px;border-radius:9px;font-size:24px;margin:15px 0}.modalbox .btn{width:100%}@media(max-width:800px){.nav nav{display:none}.hero-grid,.two{grid-template-columns:1fr;gap:35px}.grid,.guides,.stats{grid-template-columns:1fr}.grid .full{grid-column:auto}.gps{grid-template-columns:1fr}.section{padding:55px 0}.heading{align-items:flex-start;flex-direction:column;gap:12px}.footer{flex-direction:column;align-items:flex-start;gap:18px}}"""
 
-script_js = r'''const KEY="flood_help_reports_v1";
-const getReports=()=>JSON.parse(localStorage.getItem(KEY)||"[]");
-const saveReports=r=>localStorage.setItem(KEY,JSON.stringify(r));
-const countEl=document.getElementById("reportCount");
-function refreshCount(){countEl.textContent=getReports().length}
-refreshCount();
+js = """const KEY="flood_help_full_v1";
+const get=()=>JSON.parse(localStorage.getItem(KEY)||"[]");
+const save=x=>localStorage.setItem(KEY,JSON.stringify(x));
+function refresh(){
+ const r=get(); document.getElementById("count").textContent=r.length;
+ document.getElementById("all").textContent=r.length;
+ document.getElementById("urgent").textContent=r.filter(x=>x.urgency.includes("ฉุกเฉิน")).length;
+ document.getElementById("doing").textContent=r.filter(x=>x.status==="กำลังช่วยเหลือ").length;
+ document.getElementById("closed").textContent=r.filter(x=>x.status==="ปิดเรื่อง").length;
+ document.getElementById("table").innerHTML=r.map(x=>"<tr><td><b>"+x.id+"</b></td><td>"+x.type+"</td><td>"+x.urgency+"</td><td>"+x.location+"</td><td>"+x.status+"</td></tr>").join("");
+}
+refresh();
 
-document.getElementById("gpsBtn").addEventListener("click",function(){
- if(!navigator.geolocation){alert("อุปกรณ์นี้ไม่รองรับการระบุตำแหน่ง");return}
- var b=document.getElementById("gpsBtn");b.textContent="กำลังค้นหาตำแหน่ง…";
- navigator.geolocation.getCurrentPosition(function(p){
+document.getElementById("gps").onclick=()=>{
+ if(!navigator.geolocation){alert("อุปกรณ์นี้ไม่รองรับ GPS");return}
+ const b=document.getElementById("gps");b.textContent="กำลังค้นหา…";
+ navigator.geolocation.getCurrentPosition(p=>{
   document.getElementById("lat").value=p.coords.latitude.toFixed(6);
   document.getElementById("lng").value=p.coords.longitude.toFixed(6);
   b.textContent="✓ ได้ตำแหน่งแล้ว";
- },function(){
-  alert("ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาอนุญาต Location ในเบราว์เซอร์");
-  b.textContent="ใช้ตำแหน่งปัจจุบัน";
- },{enableHighAccuracy:true,timeout:10000});
-});
-
-document.getElementById("reportForm").addEventListener("submit",function(e){
- e.preventDefault();
- var f=new FormData(e.target);
- var id="FH-"+new Date().getFullYear()+"-"+Math.floor(10000+Math.random()*90000);
- var report={id:id,name:f.get("name"),phone:f.get("phone"),type:f.get("type"),water:f.get("water"),people:f.get("people"),urgency:f.get("urgency"),location:f.get("location"),lat:f.get("lat"),lng:f.get("lng"),detail:f.get("detail"),status:"รับแจ้งเหตุแล้ว",createdAt:new Date().toISOString()};
- var reports=getReports();reports.unshift(report);saveReports(reports);refreshCount();
- document.getElementById("incidentId").textContent=id;
- document.getElementById("successModal").classList.add("show");
- e.target.reset();document.getElementById("lat").value="";document.getElementById("lng").value="";
- document.getElementById("gpsBtn").textContent="ใช้ตำแหน่งปัจจุบัน";
-});
-
-document.getElementById("closeModal").onclick=function(){
- document.getElementById("successModal").classList.remove("show");
-};
-document.getElementById("goStatus").onclick=function(){
- var id=document.getElementById("incidentId").textContent;
- document.getElementById("successModal").classList.remove("show");
- document.getElementById("statusId").value=id;
- document.getElementById("status").scrollIntoView({behavior:"smooth"});
- setTimeout(function(){document.getElementById("statusForm").dispatchEvent(new Event("submit",{cancelable:true}))},400);
+ },()=>{alert("กรุณาอนุญาต Location ในเบราว์เซอร์");b.textContent="ใช้ตำแหน่งปัจจุบัน"},{enableHighAccuracy:true,timeout:10000});
 };
 
-document.getElementById("statusForm").addEventListener("submit",function(e){
- e.preventDefault();
- var id=document.getElementById("statusId").value.trim().toUpperCase();
- var r=getReports().find(function(x){return x.id===id});
- var box=document.getElementById("statusResult");
- if(!r){box.innerHTML="<div class='status-card'>ไม่พบข้อมูลเลขที่แจ้งเหตุนี้ในอุปกรณ์นี้ กรุณาตรวจสอบเลขอีกครั้ง</div>";return}
- var map=r.lat&&r.lng?"<br><a href='https://www.google.com/maps?q="+r.lat+","+r.lng+"' target='_blank' rel='noopener'>เปิดตำแหน่งบน Google Maps ↗</a>":"";
- box.innerHTML="<div class='status-card'><b>"+r.id+"</b><br>สถานะ: "+r.status+"<br>ประเภทเหตุ: "+r.type+"<br>สถานที่: "+r.location+map+"</div>";
-});
-window.addEventListener("click",function(e){
- if(e.target.id==="successModal")document.getElementById("successModal").classList.remove("show");
-});'''
+document.getElementById("reportForm").onsubmit=e=>{
+ e.preventDefault(); const f=new FormData(e.target);
+ const id="FH-"+new Date().getFullYear()+"-"+Math.floor(10000+Math.random()*90000);
+ const r={id,name:f.get("name"),phone:f.get("phone"),type:f.get("type"),water:f.get("water"),people:f.get("people"),urgency:f.get("urgency"),location:f.get("location"),lat:f.get("lat"),lng:f.get("lng"),detail:f.get("detail"),status:"รับแจ้งเหตุแล้ว",createdAt:new Date().toISOString()};
+ const a=get();a.unshift(r);save(a);refresh();
+ document.getElementById("newId").textContent=id;document.getElementById("modal").classList.add("show");
+ e.target.reset();document.getElementById("lat").value="";document.getElementById("lng").value="";document.getElementById("gps").textContent="ใช้ตำแหน่งปัจจุบัน";
+};
 
-(out/"index.html").write_text(index_html, encoding="utf-8")
-(out/"style.css").write_text(style_css, encoding="utf-8")
-(out/"script.js").write_text(script_js, encoding="utf-8")
-(out/"README.txt").write_text(
-"""ศูนย์แจ้งเหตุและช่วยเหลืออุทกภัย - เว็บต้นแบบ
-
-วิธีเปิด:
-1. แตกไฟล์ ZIP
-2. ดับเบิลคลิก index.html
-3. เว็บจะเปิดใน Chrome
-
-หมายเหตุ:
-เว็บต้นแบบนี้เก็บข้อมูลการทดสอบไว้ใน Local Storage ของเบราว์เซอร์เครื่องนั้น
-ยังไม่ใช่ฐานข้อมูลกลางสำหรับใช้งานจริงกับประชาชนจำนวนมาก
-
-ไฟล์:
-- index.html = หน้าเว็บ
-- style.css = รูปแบบและหน้าตา
-- script.js = การทำงานของแบบฟอร์ม
+document.getElementById("close").onclick=()=>document.getElementById("modal").classList.remove("show");
+document.getElementById("toTrack").onclick=()=>{
+ const id=document.getElementById("newId").textContent;document.getElementById("modal").classList.remove("show");
+ document.getElementById("trackId").value=id;document.getElementById("track").scrollIntoView({behavior:"smooth"});
+ setTimeout(()=>document.getElementById("trackForm").requestSubmit(),400);
+};
+document.getElementById("trackForm").onsubmit=e=>{
+ e.preventDefault();const id=document.getElementById("trackId").value.trim().toUpperCase();const r=get().find(x=>x.id===id);const box=document.getElementById("result");
+ if(!r){box.innerHTML="<div class='status'>ไม่พบเลขที่แจ้งเหตุนี้ในอุปกรณ์นี้ กรุณาตรวจสอบเลขอีกครั้ง</div>";return}
+ const map=r.lat&&r.lng?"<br><a target='_blank' href='https://www.google.com/maps?q="+r.lat+","+r.lng+"'>เปิดตำแหน่งบน Google Maps ↗</a>":"";
+ box.innerHTML="<div class='status'><b>"+r.id+"</b><br>สถานะ: "+r.status+"<br>ประเภทเหตุ: "+r.type+"<br>สถานที่: "+r.location+map+"</div>";
+};
+document.getElementById("demoBtn").onclick=()=>{
+ const demo=[{id:"FH-2026-10001",name:"ข้อมูลตัวอย่าง",phone:"0800000000",type:"อพยพ / ติดค้าง",urgency:"ฉุกเฉิน / มีผู้เสี่ยงอันตราย",location:"หมู่บ้านตัวอย่าง",status:"กำลังช่วยเหลือ"},{id:"FH-2026-10002",name:"ข้อมูลตัวอย่าง",phone:"0811111111",type:"อาหาร / น้ำดื่ม / ถุงยังชีพ",urgency:"เร่งด่วน",location:"ตำบลตัวอย่าง",status:"รับแจ้งเหตุแล้ว"}];
+ save(demo.concat(get()));refresh();
+ alert("โหลดข้อมูลตัวอย่างแล้ว");
+};
 """
-, encoding="utf-8")
-
-zip_path = Path("/mnt/data/flood-help-center.zip")
-with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-    for p in out.iterdir():
-        z.write(p, arcname=p.name)
-
-print(f"สร้างไฟล์สำเร็จ: {zip_path}")
-print("ภายในมี index.html, style.css, script.js และ README.txt")
